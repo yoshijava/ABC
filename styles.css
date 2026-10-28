@@ -694,7 +694,7 @@ body {
   z-index: 150;
 }
 
-/* ================= IPAD PORTRAIT RESPONSIVE LAYOUT ================= */
+/* ================= IPAD PORTRAIT & TABLET RESPONSIVE LAYOUT ================= */
 @media (max-width: 900px), (orientation: portrait) {
   .workspace {
     flex-direction: column;
@@ -704,6 +704,7 @@ body {
     width: 100%;
     flex-direction: row;
     align-items: stretch;
+    position: relative;
   }
 
   .letter-badge-card {
@@ -731,8 +732,277 @@ body {
     padding: 12px 16px;
   }
 
+  .countdown-banner {
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 10px 18px;
+  }
+
   .top-bar {
     flex-wrap: wrap;
+    justify-content: space-between;
+  }
+}
+
+/* ================= MOBILE PHONE RESPONSIVE LAYOUT ================= */
+@media (max-width: 640px) {
+  .app-container {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .top-bar {
+    padding: 6px 10px;
+    border-radius: 16px;
+    gap: 6px;
+  }
+
+  .brand-group {
+    gap: 6px;
+  }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+    border-radius: 10px;
+  }
+
+  .mode-pills {
+    padding: 3px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+
+  .pill-btn {
+    padding: 5px 8px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  .actions-group {
+    gap: 6px;
+  }
+
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: 10px;
+    gap: 4px;
+  }
+
+  .progress-wrapper {
+    order: 3;
+    width: 100%;
     justify-content: center;
+    padding: 3px 10px;
+    gap: 6px;
+  }
+
+  .stars-bar {
+    gap: 3px;
+  }
+
+  .star-slot {
+    font-size: 15px;
+  }
+
+  .progress-text {
+    font-size: 13px;
+    min-width: 42px;
+  }
+
+  .workspace {
+    gap: 8px;
+  }
+
+  .info-panel {
+    gap: 8px;
+  }
+
+  .letter-badge-card {
+    flex: 0 0 auto;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 16px;
+    border-width: 2px;
+    gap: 2px;
+  }
+
+  .case-label {
+    display: none;
+  }
+
+  .letter-pair {
+    margin: 0;
+    gap: 6px;
+  }
+
+  .main-char {
+    font-size: 36px;
+  }
+
+  .partner-char {
+    font-size: 22px;
+  }
+
+  .word-hint {
+    padding: 2px 8px;
+    border-radius: 8px;
+    gap: 4px;
+  }
+
+  .word-emoji {
+    font-size: 16px;
+  }
+
+  .word-text {
+    font-size: 13px;
+  }
+
+  .stroke-status-card {
+    padding: 6px 10px;
+    border-radius: 16px;
+    border-width: 2px;
+    gap: 5px;
+  }
+
+  .stroke-title {
+    display: none;
+  }
+
+  .stroke-dots {
+    gap: 6px;
+  }
+
+  .stroke-pill {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+  }
+
+  .status-message {
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .countdown-banner {
+    border-radius: 16px;
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .countdown-title {
+    font-size: 16px;
+  }
+
+  .countdown-sub {
+    font-size: 13px;
+  }
+
+  #countdown-sec {
+    font-size: 16px;
+  }
+
+  .skip-wait-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 9px;
+    margin-top: 0;
+  }
+
+  .canvas-container {
+    border-radius: 22px;
+    border-width: 4px;
+  }
+
+  .word-popup {
+    bottom: 10px;
+    padding: 10px 18px 12px;
+    border-radius: 24px;
+    border-width: 4px;
+    gap: 4px;
+  }
+
+  .popup-main-emoji {
+    font-size: 68px;
+  }
+
+  .popup-mini {
+    font-size: 28px;
+  }
+
+  .word-popup-badge {
+    padding: 4px 14px;
+    gap: 8px;
+  }
+
+  .popup-letter-tag {
+    font-size: 20px;
+  }
+
+  .popup-word-label {
+    font-size: 22px;
+  }
+
+  .modal-card {
+    padding: 22px 16px;
+    border-radius: 26px;
+  }
+
+  .welcome-mascots,
+  .trophy-bounce {
+    font-size: 46px;
+    margin-bottom: 6px;
+  }
+
+  .modal-card h1 {
+    font-size: 25px;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  .mode-select-group {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .mode-choice {
+    padding: 10px 6px;
+    border-radius: 14px;
+  }
+
+  .mode-big {
+    font-size: 22px;
+  }
+
+  .mode-label {
+    font-size: 12px;
+  }
+
+  .primary-btn {
+    padding: 14px 18px;
+    font-size: 18px;
+    border-radius: 16px;
+  }
+
+  .completed-letters-row {
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+
+  .completed-chip {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    border-radius: 10px;
   }
 }

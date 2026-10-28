@@ -389,7 +389,16 @@
   const particles = [];
 
   function resizeCanvases() {
-    const rect = traceCanvas.parentElement.getBoundingClientRect();
+    const container = traceCanvas.parentElement;
+    const boardSection = container.parentElement;
+    if (boardSection) {
+      const availW = boardSection.clientWidth;
+      const availH = boardSection.clientHeight;
+      const size = Math.max(200, Math.min(availW, availH, 760));
+      container.style.width = `${size}px`;
+      container.style.height = `${size}px`;
+    }
+    const rect = container.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     traceCanvas.width = Math.round(rect.width * dpr);
     traceCanvas.height = Math.round(rect.height * dpr);
