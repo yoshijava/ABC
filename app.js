@@ -286,40 +286,103 @@
     playCheerClaps(18);
   }
 
-  // Spoken letter pronunciation via Web Speech API
-  function speakLetter(letter, includeWord = false) {
-    if (!("speechSynthesis" in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const upper = letter.toUpperCase();
-      const info = window.LETTER_WORDS[upper];
-      // Using lowercase letter name avoids TTS saying "Capital A" on iOS
-      const spokenChar = letter.toLowerCase();
-      const text = includeWord && info ? `${spokenChar}! ${info.word}!` : spokenChar;
+  // Natural Neural Human Voice Audio Engine (plays bundled MP3s via Web Audio API)
+  const audioBufferCache = new Map();
+  let activeVoiceSource = null;
+  let activeHtmlAudio = null;
 
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "en-US";
-      utter.rate = 0.82; // Clear, slower cadence for kindergarten learners
-      utter.pitch = 1.1;
+  async function loadAudioBuffer(url) {
+    if (audioBufferCache.has(url)) {
+      return audioBufferCache.get(url);
+    }
+    ensureAudioContext();
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const arrayBuf = await res.arrayBuffer();
+    if (!audioCtx) throw new Error("No AudioContext");
+    const decoded = await audioCtx.decodeAudioData(arrayBuf);
+    audioBufferCache.set(url, decoded);
+    return decoded;
+  }
 
-      const voices = window.speechSynthesis.getVoices();
-      const preferredVoice =
-        voices.find((v) => v.lang === "en-US" && /Samantha|Ava|Nicky|Victoria|Alex|Google/i.test(v.name)) ||
-        voices.find((v) => v.lang && v.lang.startsWith("en-US")) ||
-        voices.find((v) => v.lang && v.lang.startsWith("en"));
-      if (preferredVoice) {
-        utter.voice = preferredVoice;
-      }
-      window.speechSynthesis.speak(utter);
-    } catch (e) {
-      console.warn("Speech synthesis error:", e);
+  function stopCurrentVoice() {
+    if (activeVoiceSource) {
+      try {
+        activeVoiceSource.stop();
+      } catch (_) {}
+      activeVoiceSource = null;
+    }
+    if (activeHtmlAudio) {
+      try {
+        activeHtmlAudio.pause();
+        activeHtmlAudio.currentTime = 0;
+      } catch (_) {}
+      activeHtmlAudio = null;
     }
   }
 
-  if ("speechSynthesis" in window) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.getVoices();
-    };
+  async function playVoiceMp3(url, fallbackText) {
+    stopCurrentVoice();
+    try {
+      ensureAudioContext();
+      if (audioCtx) {
+        const buffer = await loadAudioBuffer(url);
+        stopCurrentVoice();
+        const source = audioCtx.createBufferSource();
+        const gain = audioCtx.createGain();
+        gain.gain.value = 1.15;
+        source.buffer = buffer;
+        source.connect(gain);
+        gain.connect(audioCtx.destination);
+        activeVoiceSource = source;
+        source.start(0);
+        return;
+      }
+    } catch (_) {
+      // Fallback to HTML5 Audio if Web Audio decode fails
+      try {
+        const audio = new Audio(url);
+        activeHtmlAudio = audio;
+        await audio.play();
+        return;
+      } catch (_err) {}
+    }
+
+    // Ultimate fallback if offline and uncached
+    if ("speechSynthesis" in window && fallbackText) {
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(fallbackText);
+        utter.lang = "en-US";
+        utter.rate = 0.92;
+        utter.pitch = 1.0;
+        window.speechSynthesis.speak(utter);
+      } catch (_) {}
+    }
+  }
+
+  function preloadStageAudio(letters) {
+    letters.forEach((ch) => {
+      const upper = ch.toUpperCase();
+      loadAudioBuffer(`audio/letters/${upper}.mp3`).catch(() => {});
+      loadAudioBuffer(`audio/words/${upper}.mp3`).catch(() => {});
+    });
+    loadAudioBuffer("audio/clear.mp3").catch(() => {});
+  }
+
+  function speakLetter(letter, includeWord = false) {
+    const upper = letter.toUpperCase();
+    const info = window.LETTER_WORDS[upper];
+    const url = includeWord
+      ? `audio/words/${upper}.mp3`
+      : `audio/letters/${upper}.mp3`;
+    const fallbackText =
+      includeWord && info ? `${letter.toLowerCase()}! ${info.word}!` : letter.toLowerCase();
+    playVoiceMp3(url, fallbackText);
+  }
+
+  function speakStageClear() {
+    playVoiceMp3("audio/clear.mp3", "Yay! You did it! Great job!");
   }
 
   // ================= FIREWORKS & CONFETTI ENGINE =================
@@ -527,6 +590,7 @@
     clearTimers();
     stageOverlay.classList.remove("active");
     stageLetters = generateStageLetters();
+    preloadStageAudio(stageLetters);
     currentStageIndex = 0;
     renderStarsBar();
     loadLetter(stageLetters[0]);
@@ -634,10 +698,13 @@
     return Math.hypot(maxX - minX, maxY - minY) < 9;
   }
 
-  // Kid-friendly tolerance in 0..100 coordinate space
-  const START_TOLERANCE = 15.5;
-  const TRACE_TOLERANCE = 15.5;
+  // Strict, accurate tolerance in 0..100 coordinate space
+  const START_TOLERANCE = 6.2;
+  const TRACE_TOLERANCE = 4.8;
+  const OFF_TRACK_LIMIT = 7.6;
   let lastStepSoundIdx = 0;
+  let currentFingerPt = null;
+  let offTrackWarningUntil = 0;
 
   function handlePointerDown(evt) {
     if (isLetterCompleted) return;
@@ -645,6 +712,7 @@
     evt.preventDefault();
 
     const pt = getNormCoords(evt);
+    currentFingerPt = pt;
     const stroke = currentStrokes[activeStrokeIndex];
     if (!stroke || stroke.length === 0) return;
 
@@ -653,43 +721,36 @@
     // Special case: dot stroke on 'i' or 'j'
     if (isDotStroke(stroke)) {
       const center = stroke[0];
-      if (Math.hypot(pt.x - center.x, pt.y - center.y) <= START_TOLERANCE * 1.2) {
+      if (Math.hypot(pt.x - center.x, pt.y - center.y) <= START_TOLERANCE) {
         playPenDownSound();
         spawnFingerSparkle(pt, 10);
         completeCurrentStroke();
       } else {
         playGentleHintBoop();
+        offTrackWarningUntil = performance.now() + 500;
       }
       return;
     }
 
-    // Check distance to current resume point (or start of stroke)
+    // Must start right on the green start/resume dot
     const resumePt = stroke[activePointIndex];
     const distToResume = Math.hypot(pt.x - resumePt.x, pt.y - resumePt.y);
 
-    // Also allow grabbing slightly behind activePointIndex
-    let canGrab = distToResume <= START_TOLERANCE;
-    if (!canGrab && activePointIndex > 0) {
-      for (let i = 0; i <= activePointIndex; i++) {
-        if (Math.hypot(pt.x - stroke[i].x, pt.y - stroke[i].y) <= START_TOLERANCE) {
-          canGrab = true;
-          break;
-        }
-      }
-    }
-
-    if (canGrab) {
+    if (distToResume <= START_TOLERANCE) {
       isPointerDown = true;
       activePointerId = evt.pointerId;
       lastStepSoundIdx = activePointIndex;
       playPenDownSound();
       spawnFingerSparkle(resumePt, 8);
+      updateStrokeStatusUI();
       try {
         traceCanvas.setPointerCapture(evt.pointerId);
       } catch (_) {}
       advanceStrokeProgress(pt);
     } else {
       playGentleHintBoop();
+      offTrackWarningUntil = performance.now() + 500;
+      statusMessage.innerHTML = `🎯 請先對準綠色圓點 <strong>${activeStrokeIndex + 1}</strong> 下筆喔！`;
     }
   }
 
@@ -700,6 +761,7 @@
 
     lastInteractionTime = performance.now();
     const pt = getNormCoords(evt);
+    currentFingerPt = pt;
     advanceStrokeProgress(pt);
   }
 
@@ -707,6 +769,7 @@
     if (activePointerId !== null && evt.pointerId !== activePointerId) return;
     isPointerDown = false;
     activePointerId = null;
+    currentFingerPt = null;
     lastInteractionTime = performance.now();
   }
 
@@ -714,16 +777,42 @@
     const stroke = currentStrokes[activeStrokeIndex];
     if (!stroke) return;
 
-    // Look ahead from activePointIndex up to a window so closed loops (O, B, d, etc.)
-    // must be traced in order rather than jumping directly to the end.
-    const maxLookahead = Math.min(stroke.length - 1, activePointIndex + 16);
+    // Small lookahead window (max 4 points = ~4.8 units) so the finger must
+    // faithfully follow every curve and corner in sequence without skipping.
+    const maxLookahead = Math.min(stroke.length - 1, activePointIndex + 4);
     let bestIdx = activePointIndex;
+    let minDistInWindow = Infinity;
 
     for (let i = activePointIndex; i <= maxLookahead; i++) {
       const d = Math.hypot(pt.x - stroke[i].x, pt.y - stroke[i].y);
+      if (d < minDistInWindow) {
+        minDistInWindow = d;
+      }
       if (d <= TRACE_TOLERANCE) {
         bestIdx = i;
       }
+    }
+
+    // Also check if finger is still near the immediately preceding point
+    if (activePointIndex > 0) {
+      const dPrev = Math.hypot(
+        pt.x - stroke[activePointIndex - 1].x,
+        pt.y - stroke[activePointIndex - 1].y
+      );
+      if (dPrev < minDistInWindow) {
+        minDistInWindow = dPrev;
+      }
+    }
+
+    // If the child's finger strays off the stroke path, stop tracing and require re-centering on the green dot!
+    if (minDistInWindow > OFF_TRACK_LIMIT) {
+      isPointerDown = false;
+      activePointerId = null;
+      currentFingerPt = null;
+      offTrackWarningUntil = performance.now() + 650;
+      playGentleHintBoop();
+      statusMessage.innerHTML = `⚠️ 偏離線條囉！請從綠色圓點 <strong>${activeStrokeIndex + 1}</strong> 順著虛線慢慢畫`;
+      return;
     }
 
     if (bestIdx > activePointIndex) {
@@ -739,14 +828,14 @@
       }
     }
 
-    // Check if child reached the end of the stroke
+    // Check if child accurately reached the end of the stroke
     const endPt = stroke[stroke.length - 1];
     const distToEnd = Math.hypot(pt.x - endPt.x, pt.y - endPt.y);
     const completionRatio = activePointIndex / (stroke.length - 1);
 
     if (
-      activePointIndex >= stroke.length - 3 ||
-      (completionRatio >= 0.85 && distToEnd <= TRACE_TOLERANCE * 0.9)
+      activePointIndex >= stroke.length - 2 ||
+      (completionRatio >= 0.95 && distToEnd <= TRACE_TOLERANCE * 0.85)
     ) {
       completeCurrentStroke();
     }
@@ -863,19 +952,10 @@
     stageOverlay.classList.add("active");
     playStageClearFanfare();
 
-    // Speak cheerful congratulations
-    if ("speechSynthesis" in window) {
-      setTimeout(() => {
-        try {
-          window.speechSynthesis.cancel();
-          const utter = new SpeechSynthesisUtterance("Yay! You did it! Great job!");
-          utter.lang = "en-US";
-          utter.rate = 0.9;
-          utter.pitch = 1.2;
-          window.speechSynthesis.speak(utter);
-        } catch (_) {}
-      }, 650);
-    }
+    // Speak cheerful congratulations using natural human MP3 voice
+    setTimeout(() => {
+      speakStageClear();
+    }, 550);
 
     // Continuous celebratory fireworks + happy xylophone sparkles while on Stage Clear screen
     let burstCount = 0;
@@ -957,7 +1037,8 @@
     const h = traceCanvas.height / dpr;
     const scaleX = w / 100;
     const scaleY = h / 100;
-    const strokeWidth = Math.max(28, Math.min(w, h) * 0.088);
+    // Sleeker, well-proportioned stroke width for accurate handwriting
+    const strokeWidth = Math.max(15, Math.min(w, h) * 0.046);
 
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -975,7 +1056,7 @@
         const c = strokePts[0];
         ctx.fillStyle = "#d1d5db";
         ctx.beginPath();
-        ctx.arc(c.x * scaleX, c.y * scaleY, strokeWidth * 0.56, 0, Math.PI * 2);
+        ctx.arc(c.x * scaleX, c.y * scaleY, strokeWidth * 0.62, 0, Math.PI * 2);
         ctx.fill();
       } else {
         ctx.strokeStyle = "#d1d5db";
@@ -991,7 +1072,7 @@
         const c = strokePts[0];
         ctx.fillStyle = "#2563eb";
         ctx.beginPath();
-        ctx.arc(c.x * scaleX, c.y * scaleY, strokeWidth * 0.56, 0, Math.PI * 2);
+        ctx.arc(c.x * scaleX, c.y * scaleY, strokeWidth * 0.62, 0, Math.PI * 2);
         ctx.fill();
       } else {
         ctx.strokeStyle = "#2563eb";
@@ -1008,9 +1089,9 @@
       if (!dotMode) {
         // Dashed white guide line along the active stroke
         ctx.save();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
-        ctx.lineWidth = 4;
-        ctx.setLineDash([10, 10]);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([7, 7]);
         drawPolyline(activeStroke, 0, activeStroke.length - 1, scaleX, scaleY);
         ctx.restore();
 
@@ -1018,9 +1099,9 @@
         const endPt = activeStroke[activeStroke.length - 1];
         ctx.save();
         ctx.strokeStyle = "#60a5fa";
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(endPt.x * scaleX, endPt.y * scaleY, strokeWidth * 0.36, 0, Math.PI * 2);
+        ctx.arc(endPt.x * scaleX, endPt.y * scaleY, strokeWidth * 0.44, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
 
@@ -1038,13 +1119,19 @@
 
       // 5. Pulsing Start / Resume Point Indicator
       const currentTargetPt = activeStroke[activePointIndex] || activeStroke[0];
-      const pulse = 1 + 0.12 * Math.sin(now * 0.006);
-      const startRadius = strokeWidth * 0.48 * pulse;
+      const isWarning = now < offTrackWarningUntil;
+      const pulse = 1 + (isWarning ? 0.22 * Math.sin(now * 0.025) : 0.12 * Math.sin(now * 0.006));
+      const startRadius = Math.max(15, strokeWidth * 0.58) * pulse;
 
       ctx.save();
-      ctx.fillStyle = "#10b981";
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 4;
+      if (isWarning) {
+        ctx.fillStyle = "#f59e0b";
+        ctx.strokeStyle = "#fef3c7";
+      } else {
+        ctx.fillStyle = "#10b981";
+        ctx.strokeStyle = "#ffffff";
+      }
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.arc(
         currentTargetPt.x * scaleX,
@@ -1058,7 +1145,7 @@
 
       // Stroke number label inside start circle
       ctx.fillStyle = "#ffffff";
-      ctx.font = `900 ${Math.round(strokeWidth * 0.44)}px -apple-system, sans-serif`;
+      ctx.font = `900 ${Math.round(Math.max(14, strokeWidth * 0.55))}px -apple-system, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(
@@ -1067,6 +1154,25 @@
         currentTargetPt.y * scaleY + 1
       );
       ctx.restore();
+
+      // Live finger contact halo while writing
+      if (isPointerDown && currentFingerPt) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(37, 99, 235, 0.55)";
+        ctx.fillStyle = "rgba(59, 130, 246, 0.18)";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(
+          currentFingerPt.x * scaleX,
+          currentFingerPt.y * scaleY,
+          strokeWidth * 0.55,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
 
       // 6. Animated Guiding Hand (👆) when idle
       if (!isPointerDown && now - lastInteractionTime > 600) {
@@ -1080,7 +1186,7 @@
         const guidePt = activeStroke[idx];
         if (guidePt) {
           ctx.save();
-          ctx.font = `${Math.round(strokeWidth * 0.85)}px sans-serif`;
+          ctx.font = `${Math.round(Math.max(24, strokeWidth * 1.15))}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.shadowColor = "rgba(0,0,0,0.2)";
