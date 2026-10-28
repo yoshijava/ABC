@@ -118,6 +118,19 @@
       <section class="board-section">
         <div id="canvas-container" class="canvas-container">
           <canvas id="trace-canvas"></canvas>
+
+          <!-- Word Object Pop-up from Bottom (e.g. Elephant 🐘) -->
+          <div id="word-popup" class="word-popup" aria-live="polite">
+            <div class="word-popup-stage">
+              <span id="popup-mini-left" class="popup-mini mini-left">🍎</span>
+              <div id="popup-main-emoji" class="popup-main-emoji">🍎</div>
+              <span id="popup-mini-right" class="popup-mini mini-right">🍎</span>
+            </div>
+            <div class="word-popup-badge">
+              <span id="popup-letter-tag" class="popup-letter-tag">A a</span>
+              <span id="popup-word-label" class="popup-word-label">Apple</span>
+            </div>
+          </div>
         </div>
       </section>
     </main>

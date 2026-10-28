@@ -42,6 +42,12 @@
   const countdownBanner = document.getElementById("countdown-banner");
   const countdownSec = document.getElementById("countdown-sec");
   const completedLettersRow = document.getElementById("completed-letters-row");
+  const wordPopup = document.getElementById("word-popup");
+  const popupMainEmoji = document.getElementById("popup-main-emoji");
+  const popupMiniLeft = document.getElementById("popup-mini-left");
+  const popupMiniRight = document.getElementById("popup-mini-right");
+  const popupLetterTag = document.getElementById("popup-letter-tag");
+  const popupWordLabel = document.getElementById("popup-word-label");
 
   const traceCanvas = document.getElementById("trace-canvas");
   const ctx = traceCanvas.getContext("2d");
@@ -205,16 +211,79 @@
     playFireworkPop();
   }
 
+  function playMascotPopSound() {
+    ensureAudioContext();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    // Playful cartoon spring "boing-pop" sound when the word object pops up from bottom
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(720, now + 0.14);
+    osc.frequency.exponentialRampToValueAtTime(540, now + 0.24);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.34);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.28, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.38);
+  }
+
+  function playCheerClaps(count = 14) {
+    ensureAudioContext();
+    if (!audioCtx) return;
+    for (let c = 0; c < count; c++) {
+      const delay = c * 0.09 + Math.random() * 0.04;
+      const start = audioCtx.currentTime + delay;
+      const bufferSize = Math.floor(audioCtx.sampleRate * 0.07);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.28));
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = 1100 + Math.random() * 700;
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.12;
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+      noise.start(start);
+    }
+  }
+
   function playStageClearFanfare() {
+    // Joyful celebratory carnival/victory melody + harmony + applause
     const melody = [
-      { f: 523.25, d: 0.15, t: 0.0 },
-      { f: 659.25, d: 0.15, t: 0.14 },
-      { f: 783.99, d: 0.15, t: 0.28 },
-      { f: 1046.5, d: 0.3, t: 0.42 },
-      { f: 783.99, d: 0.15, t: 0.72 },
-      { f: 1046.5, d: 0.55, t: 0.88 },
+      { f: 523.25, d: 0.14, t: 0.0 },   // C5
+      { f: 659.25, d: 0.14, t: 0.14 },  // E5
+      { f: 783.99, d: 0.14, t: 0.28 },  // G5
+      { f: 1046.5, d: 0.26, t: 0.42 },  // C6
+      { f: 880.0, d: 0.14, t: 0.70 },   // A5
+      { f: 1046.5, d: 0.26, t: 0.84 },  // C6
+      { f: 1174.66, d: 0.16, t: 1.12 }, // D6
+      { f: 1318.51, d: 0.16, t: 1.28 }, // E6
+      { f: 1567.98, d: 0.45, t: 1.46 }, // G6
+      { f: 1318.51, d: 0.16, t: 1.94 }, // E6
+      { f: 1567.98, d: 0.65, t: 2.12 }, // G6!
     ];
-    melody.forEach((m) => playTone(m.f, m.d, "triangle", m.t, 0.25));
+    melody.forEach((m) => {
+      playTone(m.f, m.d, "triangle", m.t, 0.26);
+      playTone(m.f * 0.5, m.d, "sine", m.t, 0.16);
+    });
+    // Final triumphant major chord
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq) => {
+      playTone(freq, 0.85, "triangle", 2.12, 0.16);
+    });
+    playCheerClaps(18);
   }
 
   // Spoken letter pronunciation via Web Speech API
@@ -494,6 +563,7 @@
     lastInteractionTime = performance.now();
 
     countdownBanner.classList.add("hidden");
+    hideWordPopup();
 
     // Update left info card
     const isUpper = letter === letter.toUpperCase();
@@ -700,6 +770,34 @@
     }
   }
 
+  function showWordPopup(letter) {
+    if (!wordPopup) return;
+    const upper = letter.toUpperCase();
+    const lower = letter.toLowerCase();
+    const info = window.LETTER_WORDS[upper] || { word: upper, emoji: "🌟" };
+
+    popupMainEmoji.textContent = info.emoji;
+    popupMiniLeft.textContent = info.emoji;
+    popupMiniRight.textContent = info.emoji;
+    popupLetterTag.textContent = `${upper} ${lower}`;
+    popupWordLabel.textContent = info.word;
+
+    wordPopup.classList.add("show");
+    playMascotPopSound();
+  }
+
+  function hideWordPopup() {
+    if (!wordPopup) return;
+    wordPopup.classList.remove("show");
+  }
+
+  if (wordPopup) {
+    wordPopup.addEventListener("click", () => {
+      playMascotPopSound();
+      speakLetter(currentLetter, true);
+    });
+  }
+
   function onLetterCompleted() {
     isLetterCompleted = true;
     updateStrokeStatusUI();
@@ -717,10 +815,11 @@
       spawnFireworkBurst(0.52, 0.28, 55);
     }, 450);
 
-    // Speak the letter + associated word
+    // Pop up the word mascot from the bottom & speak the letter + word!
     setTimeout(() => {
+      showWordPopup(currentLetter);
       speakLetter(currentLetter, true);
-    }, 350);
+    }, 280);
 
     // Show 3-second countdown banner and auto-advance after 3 seconds
     let remaining = 3;
@@ -741,6 +840,7 @@
 
   function proceedToNextLetter() {
     clearTimers();
+    hideWordPopup();
     currentStageIndex++;
     if (currentStageIndex >= TOTAL_PER_STAGE) {
       triggerStageClearCelebration();
@@ -751,6 +851,7 @@
 
   function triggerStageClearCelebration() {
     countdownBanner.classList.add("hidden");
+    hideWordPopup();
     completedLettersRow.innerHTML = "";
     stageLetters.forEach((ch) => {
       const chip = document.createElement("div");
@@ -762,9 +863,29 @@
     stageOverlay.classList.add("active");
     playStageClearFanfare();
 
-    // Continuous celebratory fireworks while on Stage Clear screen
+    // Speak cheerful congratulations
+    if ("speechSynthesis" in window) {
+      setTimeout(() => {
+        try {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance("Yay! You did it! Great job!");
+          utter.lang = "en-US";
+          utter.rate = 0.9;
+          utter.pitch = 1.2;
+          window.speechSynthesis.speak(utter);
+        } catch (_) {}
+      }, 650);
+    }
+
+    // Continuous celebratory fireworks + happy xylophone sparkles while on Stage Clear screen
+    let burstCount = 0;
+    const happyNotes = [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98];
     const launchRandomBurst = () => {
       playFireworkPop();
+      const note = happyNotes[burstCount % happyNotes.length];
+      playTone(note, 0.18, "triangle", 0, 0.15);
+      playTone(note * 1.25, 0.22, "sine", 0.06, 0.13);
+      burstCount++;
       spawnFireworkBurst(0.2 + Math.random() * 0.6, 0.2 + Math.random() * 0.45, 50);
     };
     launchRandomBurst();
