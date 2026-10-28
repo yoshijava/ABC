@@ -361,20 +361,21 @@
     }
   }
 
+  let currentWordItem = { id: "A_apple", word: "Apple", emoji: "🍎" };
+
   function preloadStageAudio(letters) {
     letters.forEach((ch) => {
       const upper = ch.toUpperCase();
       loadAudioBuffer(`audio/letters/${upper}.mp3`).catch(() => {});
-      loadAudioBuffer(`audio/words/${upper}.mp3`).catch(() => {});
     });
     loadAudioBuffer("audio/clear.mp3").catch(() => {});
   }
 
   function speakLetter(letter, includeWord = false) {
     const upper = letter.toUpperCase();
-    const info = window.LETTER_WORDS[upper];
+    const info = currentWordItem || { id: `${upper}_word`, word: upper };
     const url = includeWord
-      ? `audio/words/${upper}.mp3`
+      ? `audio/words/${info.id}.mp3`
       : `audio/letters/${upper}.mp3`;
     const fallbackText =
       includeWord && info ? `${letter.toLowerCase()}! ${info.word}!` : letter.toLowerCase();
@@ -644,11 +645,13 @@
     currentLetterDisplay.textContent = letter;
     partnerLetterDisplay.textContent = isUpper ? letter.toLowerCase() : letter.toUpperCase();
 
-    const wordInfo = window.LETTER_WORDS[letter.toUpperCase()];
-    if (wordInfo) {
-      wordEmoji.textContent = wordInfo.emoji;
-      wordText.textContent = wordInfo.word;
-    }
+    const wordInfo = window.pickWordForLetter
+      ? window.pickWordForLetter(letter)
+      : { id: "A_apple", word: "Apple", emoji: "🍎" };
+    currentWordItem = wordInfo;
+    wordEmoji.textContent = wordInfo.emoji;
+    wordText.textContent = wordInfo.word;
+    loadAudioBuffer(`audio/words/${wordInfo.id}.mp3`).catch(() => {});
 
     renderStarsBar();
     updateStrokeStatusUI();
@@ -872,7 +875,7 @@
     if (!wordPopup) return;
     const upper = letter.toUpperCase();
     const lower = letter.toLowerCase();
-    const info = window.LETTER_WORDS[upper] || { word: upper, emoji: "🌟" };
+    const info = currentWordItem || { word: upper, emoji: "🌟" };
 
     popupMainEmoji.textContent = info.emoji;
     popupMiniLeft.textContent = info.emoji;
@@ -1278,6 +1281,17 @@
 
   letterBadgeCard.addEventListener("click", () => {
     ensureAudioContext();
+    if (window.pickWordForLetter) {
+      currentWordItem = window.pickWordForLetter(currentLetter);
+      wordEmoji.textContent = currentWordItem.emoji;
+      wordText.textContent = currentWordItem.word;
+      if (wordPopup && wordPopup.classList.contains("show")) {
+        popupMainEmoji.textContent = currentWordItem.emoji;
+        popupMiniLeft.textContent = currentWordItem.emoji;
+        popupMiniRight.textContent = currentWordItem.emoji;
+        popupWordLabel.textContent = currentWordItem.word;
+      }
+    }
     speakLetter(currentLetter, true);
   });
 

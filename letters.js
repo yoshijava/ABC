@@ -392,35 +392,208 @@ for (const [ch, strokes] of Object.entries(RAW_LETTERS)) {
   LETTER_STROKES[ch] = strokes.map((s) => resampleUniform(s, 1.2));
 }
 
-// Fun associated words & emojis for extra visual delight for a kindergarten child
-const LETTER_WORDS = {
-  A: { word: "Apple", emoji: "🍎" },
-  B: { word: "Bear", emoji: "🐻" },
-  C: { word: "Cat", emoji: "🐱" },
-  D: { word: "Dog", emoji: "🐶" },
-  E: { word: "Elephant", emoji: "🐘" },
-  F: { word: "Fish", emoji: "🐟" },
-  G: { word: "Giraffe", emoji: "🦒" },
-  H: { word: "Hippo", emoji: "🦛" },
-  I: { word: "Ice cream", emoji: "🍦" },
-  J: { word: "Juice", emoji: "🧃" },
-  K: { word: "Koala", emoji: "🐨" },
-  L: { word: "Lion", emoji: "🦁" },
-  M: { word: "Monkey", emoji: "🐵" },
-  N: { word: "Nest", emoji: "🪺" },
-  O: { word: "Octopus", emoji: "🐙" },
-  P: { word: "Penguin", emoji: "🐧" },
-  Q: { word: "Queen", emoji: "👑" },
-  R: { word: "Rabbit", emoji: "🐰" },
-  S: { word: "Sun", emoji: "☀️" },
-  T: { word: "Tiger", emoji: "🐯" },
-  U: { word: "Umbrella", emoji: "☂️" },
-  V: { word: "Violin", emoji: "🎻" },
-  W: { word: "Whale", emoji: "🐳" },
-  X: { word: "Xylophone", emoji: "🎶" },
-  Y: { word: "Yacht", emoji: "⛵" },
-  Z: { word: "Zebra", emoji: "🦓" },
+// Rich Kindergarten Vocabulary Bank (5 words per letter = 130 words)
+const LETTER_VOCAB = {
+  A: [
+    { id: "A_apple", word: "Apple", emoji: "🍎" },
+    { id: "A_ant", word: "Ant", emoji: "🐜" },
+    { id: "A_airplane", word: "Airplane", emoji: "✈️" },
+    { id: "A_alligator", word: "Alligator", emoji: "🐊" },
+    { id: "A_astronaut", word: "Astronaut", emoji: "🧑‍🚀" },
+  ],
+  B: [
+    { id: "B_bear", word: "Bear", emoji: "🐻" },
+    { id: "B_banana", word: "Banana", emoji: "🍌" },
+    { id: "B_ball", word: "Ball", emoji: "⚽" },
+    { id: "B_bird", word: "Bird", emoji: "🐦" },
+    { id: "B_bus", word: "Bus", emoji: "🚌" },
+  ],
+  C: [
+    { id: "C_cat", word: "Cat", emoji: "🐱" },
+    { id: "C_car", word: "Car", emoji: "🚗" },
+    { id: "C_cake", word: "Cake", emoji: "🎂" },
+    { id: "C_cow", word: "Cow", emoji: "🐮" },
+    { id: "C_cookie", word: "Cookie", emoji: "🍪" },
+  ],
+  D: [
+    { id: "D_dog", word: "Dog", emoji: "🐶" },
+    { id: "D_duck", word: "Duck", emoji: "🦆" },
+    { id: "D_dinosaur", word: "Dinosaur", emoji: "🦖" },
+    { id: "D_drum", word: "Drum", emoji: "🥁" },
+    { id: "D_dolphin", word: "Dolphin", emoji: "🐬" },
+  ],
+  E: [
+    { id: "E_elephant", word: "Elephant", emoji: "🐘" },
+    { id: "E_egg", word: "Egg", emoji: "🥚" },
+    { id: "E_eagle", word: "Eagle", emoji: "🦅" },
+    { id: "E_ear", word: "Ear", emoji: "👂" },
+    { id: "E_earth", word: "Earth", emoji: "🌍" },
+  ],
+  F: [
+    { id: "F_fish", word: "Fish", emoji: "🐟" },
+    { id: "F_frog", word: "Frog", emoji: "🐸" },
+    { id: "F_flower", word: "Flower", emoji: "🌸" },
+    { id: "F_fox", word: "Fox", emoji: "🦊" },
+    { id: "F_firetruck", word: "Firetruck", emoji: "🚒" },
+  ],
+  G: [
+    { id: "G_giraffe", word: "Giraffe", emoji: "🦒" },
+    { id: "G_grapes", word: "Grapes", emoji: "🍇" },
+    { id: "G_goat", word: "Goat", emoji: "🐐" },
+    { id: "G_guitar", word: "Guitar", emoji: "🎸" },
+    { id: "G_gift", word: "Gift", emoji: "🎁" },
+  ],
+  H: [
+    { id: "H_hippo", word: "Hippo", emoji: "🦛" },
+    { id: "H_hat", word: "Hat", emoji: "👒" },
+    { id: "H_horse", word: "Horse", emoji: "🐴" },
+    { id: "H_house", word: "House", emoji: "🏠" },
+    { id: "H_helicopter", word: "Helicopter", emoji: "🚁" },
+  ],
+  I: [
+    { id: "I_ice_cream", word: "Ice cream", emoji: "🍦" },
+    { id: "I_igloo", word: "Igloo", emoji: "🧊" },
+    { id: "I_insect", word: "Insect", emoji: "🐛" },
+    { id: "I_island", word: "Island", emoji: "🏝️" },
+    { id: "I_iguana", word: "Iguana", emoji: "🦎" },
+  ],
+  J: [
+    { id: "J_juice", word: "Juice", emoji: "🧃" },
+    { id: "J_jellyfish", word: "Jellyfish", emoji: "🪼" },
+    { id: "J_jacket", word: "Jacket", emoji: "🧥" },
+    { id: "J_jam", word: "Jam", emoji: "🍓" },
+    { id: "J_jet", word: "Jet", emoji: "🛩️" },
+  ],
+  K: [
+    { id: "K_koala", word: "Koala", emoji: "🐨" },
+    { id: "K_kangaroo", word: "Kangaroo", emoji: "🦘" },
+    { id: "K_kite", word: "Kite", emoji: "🪁" },
+    { id: "K_king", word: "King", emoji: "🤴" },
+    { id: "K_key", word: "Key", emoji: "🔑" },
+  ],
+  L: [
+    { id: "L_lion", word: "Lion", emoji: "🦁" },
+    { id: "L_lemon", word: "Lemon", emoji: "🍋" },
+    { id: "L_leaf", word: "Leaf", emoji: "🍃" },
+    { id: "L_ladybug", word: "Ladybug", emoji: "🐞" },
+    { id: "L_lamb", word: "Lamb", emoji: "🐑" },
+  ],
+  M: [
+    { id: "M_monkey", word: "Monkey", emoji: "🐵" },
+    { id: "M_milk", word: "Milk", emoji: "🥛" },
+    { id: "M_moon", word: "Moon", emoji: "🌙" },
+    { id: "M_mouse", word: "Mouse", emoji: "🐭" },
+    { id: "M_mango", word: "Mango", emoji: "🥭" },
+  ],
+  N: [
+    { id: "N_nest", word: "Nest", emoji: "🪺" },
+    { id: "N_nose", word: "Nose", emoji: "👃" },
+    { id: "N_noodle", word: "Noodle", emoji: "🍜" },
+    { id: "N_nut", word: "Nut", emoji: "🥜" },
+    { id: "N_nurse", word: "Nurse", emoji: "🧑‍⚕️" },
+  ],
+  O: [
+    { id: "O_octopus", word: "Octopus", emoji: "🐙" },
+    { id: "O_orange", word: "Orange", emoji: "🍊" },
+    { id: "O_owl", word: "Owl", emoji: "🦉" },
+    { id: "O_ostrich", word: "Ostrich", emoji: "🦤" },
+    { id: "O_onion", word: "Onion", emoji: "🧅" },
+  ],
+  P: [
+    { id: "P_penguin", word: "Penguin", emoji: "🐧" },
+    { id: "P_pig", word: "Pig", emoji: "🐷" },
+    { id: "P_pizza", word: "Pizza", emoji: "🍕" },
+    { id: "P_panda", word: "Panda", emoji: "🐼" },
+    { id: "P_pineapple", word: "Pineapple", emoji: "🍍" },
+  ],
+  Q: [
+    { id: "Q_queen", word: "Queen", emoji: "👑" },
+    { id: "Q_quilt", word: "Quilt", emoji: "🛌" },
+    { id: "Q_question", word: "Question", emoji: "❓" },
+    { id: "Q_quail", word: "Quail", emoji: "🐦" },
+    { id: "Q_quiet", word: "Quiet", emoji: "🤫" },
+  ],
+  R: [
+    { id: "R_rabbit", word: "Rabbit", emoji: "🐰" },
+    { id: "R_rainbow", word: "Rainbow", emoji: "🌈" },
+    { id: "R_robot", word: "Robot", emoji: "🤖" },
+    { id: "R_rocket", word: "Rocket", emoji: "🚀" },
+    { id: "R_rose", word: "Rose", emoji: "🌹" },
+  ],
+  S: [
+    { id: "S_sun", word: "Sun", emoji: "☀️" },
+    { id: "S_star", word: "Star", emoji: "⭐" },
+    { id: "S_strawberry", word: "Strawberry", emoji: "🍓" },
+    { id: "S_snake", word: "Snake", emoji: "🐍" },
+    { id: "S_shark", word: "Shark", emoji: "🦈" },
+  ],
+  T: [
+    { id: "T_tiger", word: "Tiger", emoji: "🐯" },
+    { id: "T_train", word: "Train", emoji: "🚂" },
+    { id: "T_turtle", word: "Turtle", emoji: "🐢" },
+    { id: "T_tree", word: "Tree", emoji: "🌳" },
+    { id: "T_tomato", word: "Tomato", emoji: "🍅" },
+  ],
+  U: [
+    { id: "U_umbrella", word: "Umbrella", emoji: "☂️" },
+    { id: "U_unicorn", word: "Unicorn", emoji: "🦄" },
+    { id: "U_ufo", word: "UFO", emoji: "🛸" },
+    { id: "U_ukulele", word: "Ukulele", emoji: "🎸" },
+    { id: "U_up", word: "Up", emoji: "⬆️" },
+  ],
+  V: [
+    { id: "V_violin", word: "Violin", emoji: "🎻" },
+    { id: "V_van", word: "Van", emoji: "🚐" },
+    { id: "V_volcano", word: "Volcano", emoji: "🌋" },
+    { id: "V_vegetables", word: "Vegetables", emoji: "🥦" },
+    { id: "V_vase", word: "Vase", emoji: "🏺" },
+  ],
+  W: [
+    { id: "W_whale", word: "Whale", emoji: "🐳" },
+    { id: "W_watermelon", word: "Watermelon", emoji: "🍉" },
+    { id: "W_watch", word: "Watch", emoji: "⌚" },
+    { id: "W_worm", word: "Worm", emoji: "🪱" },
+    { id: "W_wolf", word: "Wolf", emoji: "🐺" },
+  ],
+  X: [
+    { id: "X_xylophone", word: "Xylophone", emoji: "🎶" },
+    { id: "X_xray", word: "X-ray", emoji: "🩻" },
+    { id: "X_box", word: "Box", emoji: "📦" },
+    { id: "X_fox", word: "Fox", emoji: "🦊" },
+    { id: "X_six", word: "Six", emoji: "6️⃣" },
+  ],
+  Y: [
+    { id: "Y_yacht", word: "Yacht", emoji: "⛵" },
+    { id: "Y_yoyo", word: "Yo-yo", emoji: "🪀" },
+    { id: "Y_yogurt", word: "Yogurt", emoji: "🥣" },
+    { id: "Y_yak", word: "Yak", emoji: "🐂" },
+    { id: "Y_yellow", word: "Yellow", emoji: "💛" },
+  ],
+  Z: [
+    { id: "Z_zebra", word: "Zebra", emoji: "🦓" },
+    { id: "Z_zoo", word: "Zoo", emoji: "🎪" },
+    { id: "Z_zipper", word: "Zipper", emoji: "🧥" },
+    { id: "Z_zero", word: "Zero", emoji: "0️⃣" },
+    { id: "Z_zucchini", word: "Zucchini", emoji: "🥒" },
+  ],
 };
 
+// Track non-repeating shuffled decks per letter so children see diverse words
+const letterWordDecks = {};
+function pickWordForLetter(letter) {
+  const upper = letter.toUpperCase();
+  const list = LETTER_VOCAB[upper] || [{ id: "A_apple", word: "Apple", emoji: "🍎" }];
+  if (!letterWordDecks[upper] || letterWordDecks[upper].length === 0) {
+    const deck = [...list];
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    letterWordDecks[upper] = deck;
+  }
+  return letterWordDecks[upper].pop();
+}
+
 window.LETTER_STROKES = LETTER_STROKES;
-window.LETTER_WORDS = LETTER_WORDS;
+window.LETTER_VOCAB = LETTER_VOCAB;
+window.pickWordForLetter = pickWordForLetter;
