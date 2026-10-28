@@ -111,9 +111,7 @@ const RAW_LETTERS = {
     chain(
       sampleLine(32, 18, 54, 18),
       sampleEllipse(54, 32.5, 16, 14.5, -90, 90),
-      sampleLine(54, 47, 32, 47)
-    ),
-    chain(
+      sampleLine(54, 47, 32, 47),
       sampleLine(32, 47, 56, 47),
       sampleEllipse(56, 61.5, 18, 14.5, -90, 90),
       sampleLine(56, 76, 32, 76)
@@ -131,10 +129,12 @@ const RAW_LETTERS = {
     ),
   ],
   E: [
-    sampleLine(34, 18, 34, 76),
+    chain(
+      sampleLine(34, 18, 34, 76),
+      sampleLine(34, 76, 68, 76)
+    ),
     sampleLine(34, 18, 68, 18),
     sampleLine(34, 47, 62, 47),
-    sampleLine(34, 76, 68, 76),
   ],
   F: [
     sampleLine(34, 18, 34, 76),
@@ -159,30 +159,37 @@ const RAW_LETTERS = {
   ],
   J: [
     chain(
-      sampleLine(60, 18, 60, 58),
-      sampleEllipse(45, 58, 15, 18, 0, 175)
+      sampleLine(58, 18, 58, 58),
+      sampleEllipse(43, 58, 15, 18, 0, 175)
     ),
-    sampleLine(42, 18, 74, 18),
   ],
   K: [
     sampleLine(32, 18, 32, 76),
-    sampleLine(68, 18, 32, 48),
-    sampleLine(42, 40, 70, 76),
+    chain(
+      sampleLine(68, 18, 34, 47),
+      sampleLine(34, 47, 70, 76)
+    ),
   ],
   L: [
-    sampleLine(34, 18, 34, 76),
-    sampleLine(34, 76, 68, 76),
+    chain(
+      sampleLine(34, 18, 34, 76),
+      sampleLine(34, 76, 68, 76)
+    ),
   ],
   M: [
     sampleLine(24, 18, 24, 76),
-    sampleLine(24, 18, 50, 58),
-    sampleLine(76, 18, 50, 58),
-    sampleLine(76, 18, 76, 76),
+    chain(
+      sampleLine(24, 18, 50, 62),
+      sampleLine(50, 62, 76, 18),
+      sampleLine(76, 18, 76, 76)
+    ),
   ],
   N: [
     sampleLine(28, 18, 28, 76),
-    sampleLine(28, 18, 72, 76),
-    sampleLine(72, 18, 72, 76),
+    chain(
+      sampleLine(28, 18, 72, 76),
+      sampleLine(72, 76, 72, 18)
+    ),
   ],
   O: [
     sampleEllipse(50, 47, 24, 29, -90, -450),
@@ -204,9 +211,9 @@ const RAW_LETTERS = {
     chain(
       sampleLine(32, 18, 54, 18),
       sampleEllipse(54, 33, 17, 15, -90, 90),
-      sampleLine(54, 48, 32, 48)
+      sampleLine(54, 48, 32, 48),
+      sampleLine(48, 48, 70, 76)
     ),
-    sampleLine(50, 48, 70, 76),
   ],
   S: [
     sampleCubic(66, 26, 48, 6, 20, 36, 50, 47).concat(
@@ -214,8 +221,8 @@ const RAW_LETTERS = {
     ),
   ],
   T: [
-    sampleLine(50, 18, 50, 76),
     sampleLine(24, 18, 76, 18),
+    sampleLine(50, 18, 50, 76),
   ],
   U: [
     chain(
@@ -225,14 +232,18 @@ const RAW_LETTERS = {
     ),
   ],
   V: [
-    sampleLine(26, 18, 50, 76),
-    sampleLine(74, 18, 50, 76),
+    chain(
+      sampleLine(26, 18, 50, 76),
+      sampleLine(50, 76, 74, 18)
+    ),
   ],
   W: [
-    sampleLine(20, 18, 35, 76),
-    sampleLine(50, 34, 35, 76),
-    sampleLine(50, 34, 65, 76),
-    sampleLine(80, 18, 65, 76),
+    chain(
+      sampleLine(18, 18, 34, 76),
+      sampleLine(34, 76, 50, 32),
+      sampleLine(50, 32, 66, 76),
+      sampleLine(66, 76, 82, 18)
+    ),
   ],
   X: [
     sampleLine(28, 18, 72, 76),
@@ -240,29 +251,33 @@ const RAW_LETTERS = {
   ],
   Y: [
     sampleLine(26, 18, 50, 48),
-    sampleLine(74, 18, 50, 48),
-    sampleLine(50, 48, 50, 76),
+    chain(
+      sampleLine(74, 18, 50, 48),
+      sampleLine(50, 48, 50, 76)
+    ),
   ],
   Z: [
-    sampleLine(28, 18, 72, 18),
-    sampleLine(72, 18, 28, 76),
-    sampleLine(28, 76, 72, 76),
+    chain(
+      sampleLine(28, 18, 72, 18),
+      sampleLine(72, 18, 28, 76),
+      sampleLine(28, 76, 72, 76)
+    ),
   ],
 
   // ================= LOWERCASE a - z =================
   a: [
-    sampleEllipse(47, 61, 16, 15, -35, -325),
+    sampleEllipse(47, 61, 16, 15, -25, -335),
     sampleLine(63, 46, 63, 76),
   ],
   b: [
     sampleLine(34, 18, 34, 76),
-    sampleEllipse(50, 61, 16, 15, -145, 145),
+    sampleEllipse(50, 61, 16, 15, -165, 165),
   ],
   c: [
     sampleEllipse(52, 61, 16, 15, -45, -315),
   ],
   d: [
-    sampleEllipse(47, 61, 16, 15, -35, -325),
+    sampleEllipse(47, 61, 16, 15, -25, -335),
     sampleLine(63, 18, 63, 76),
   ],
   e: [
@@ -279,7 +294,7 @@ const RAW_LETTERS = {
     sampleLine(32, 46, 62, 46),
   ],
   g: [
-    sampleEllipse(47, 61, 16, 15, -35, -325),
+    sampleEllipse(47, 61, 16, 15, -25, -335),
     chain(
       sampleLine(63, 46, 63, 78),
       sampleEllipse(48, 78, 15, 15, 0, 165)
@@ -288,7 +303,7 @@ const RAW_LETTERS = {
   h: [
     sampleLine(34, 18, 34, 76),
     chain(
-      sampleEllipse(50, 58, 16, 12, -180, 0),
+      sampleEllipse(50, 58, 16, 12, -170, 0),
       sampleLine(66, 58, 66, 76)
     ),
   ],
@@ -305,8 +320,10 @@ const RAW_LETTERS = {
   ],
   k: [
     sampleLine(36, 18, 36, 76),
-    sampleLine(64, 46, 36, 62),
-    sampleLine(46, 56, 66, 76),
+    chain(
+      sampleLine(64, 46, 38, 61),
+      sampleLine(38, 61, 66, 76)
+    ),
   ],
   l: [
     sampleLine(50, 18, 50, 76),
@@ -314,18 +331,18 @@ const RAW_LETTERS = {
   m: [
     sampleLine(22, 46, 22, 76),
     chain(
-      sampleEllipse(36, 57, 14, 11, -180, 0),
+      sampleEllipse(36, 57, 14, 11, -170, 0),
       sampleLine(50, 57, 50, 76)
     ),
     chain(
-      sampleEllipse(64, 57, 14, 11, -180, 0),
+      sampleEllipse(64, 57, 14, 11, -170, 0),
       sampleLine(78, 57, 78, 76)
     ),
   ],
   n: [
     sampleLine(34, 46, 34, 76),
     chain(
-      sampleEllipse(50, 58, 16, 12, -180, 0),
+      sampleEllipse(50, 58, 16, 12, -170, 0),
       sampleLine(66, 58, 66, 76)
     ),
   ],
@@ -334,15 +351,15 @@ const RAW_LETTERS = {
   ],
   p: [
     sampleLine(34, 46, 34, 94),
-    sampleEllipse(50, 61, 16, 15, -145, 145),
+    sampleEllipse(50, 61, 16, 15, -165, 165),
   ],
   q: [
-    sampleEllipse(47, 61, 16, 15, -35, -325),
+    sampleEllipse(47, 61, 16, 15, -25, -335),
     sampleLine(63, 46, 63, 94),
   ],
   r: [
     sampleLine(38, 46, 38, 76),
-    sampleEllipse(52, 58, 14, 12, -180, -35),
+    sampleEllipse(52, 58, 14, 12, -170, -35),
   ],
   s: [
     sampleCubic(61, 51, 49, 41, 31, 54, 50, 61).concat(
@@ -356,20 +373,23 @@ const RAW_LETTERS = {
   u: [
     chain(
       sampleLine(34, 46, 34, 64),
-      sampleEllipse(50, 64, 16, 12, 180, 0),
-      sampleLine(66, 64, 66, 46)
+      sampleEllipse(50, 64, 16, 12, 180, 0)
     ),
     sampleLine(66, 46, 66, 76),
   ],
   v: [
-    sampleLine(32, 46, 50, 76),
-    sampleLine(68, 46, 50, 76),
+    chain(
+      sampleLine(32, 46, 50, 76),
+      sampleLine(50, 76, 68, 46)
+    ),
   ],
   w: [
-    sampleLine(22, 46, 36, 76),
-    sampleLine(50, 52, 36, 76),
-    sampleLine(50, 52, 64, 76),
-    sampleLine(78, 46, 64, 76),
+    chain(
+      sampleLine(20, 46, 35, 76),
+      sampleLine(35, 76, 50, 50),
+      sampleLine(50, 50, 65, 76),
+      sampleLine(65, 76, 80, 46)
+    ),
   ],
   x: [
     sampleLine(34, 46, 66, 76),
@@ -380,9 +400,11 @@ const RAW_LETTERS = {
     sampleLine(66, 46, 38, 94),
   ],
   z: [
-    sampleLine(34, 46, 66, 46),
-    sampleLine(66, 46, 34, 76),
-    sampleLine(34, 76, 66, 76),
+    chain(
+      sampleLine(34, 46, 66, 46),
+      sampleLine(66, 46, 34, 76),
+      sampleLine(34, 76, 66, 76)
+    ),
   ],
 };
 

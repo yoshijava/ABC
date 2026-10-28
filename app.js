@@ -710,10 +710,10 @@
     return Math.hypot(maxX - minX, maxY - minY) < 9;
   }
 
-  // Strict, accurate tolerance in 0..100 coordinate space
-  const START_TOLERANCE = 6.2;
-  const TRACE_TOLERANCE = 4.8;
-  const OFF_TRACK_LIMIT = 7.6;
+  // Balanced, smooth tolerance in 0..100 coordinate space (matches visual stroke width ~8.8)
+  const START_TOLERANCE = 9.5;
+  const TRACE_TOLERANCE = 7.8;
+  const OFF_TRACK_LIMIT = 13.5;
   let lastStepSoundIdx = 0;
   let currentFingerPt = null;
   let offTrackWarningUntil = 0;
@@ -733,7 +733,7 @@
     // Special case: dot stroke on 'i' or 'j'
     if (isDotStroke(stroke)) {
       const center = stroke[0];
-      if (Math.hypot(pt.x - center.x, pt.y - center.y) <= START_TOLERANCE) {
+      if (Math.hypot(pt.x - center.x, pt.y - center.y) <= START_TOLERANCE * 1.15) {
         playPenDownSound();
         spawnFingerSparkle(pt, 10);
         completeCurrentStroke();
@@ -744,11 +744,21 @@
       return;
     }
 
-    // Must start right on the green start/resume dot
+    // Must start on the green start/resume dot (or slightly behind on already-traced blue part)
     const resumePt = stroke[activePointIndex];
     const distToResume = Math.hypot(pt.x - resumePt.x, pt.y - resumePt.y);
+    let canGrab = distToResume <= START_TOLERANCE;
+    if (!canGrab && activePointIndex > 0) {
+      const lookBack = Math.max(0, activePointIndex - 6);
+      for (let i = lookBack; i <= activePointIndex; i++) {
+        if (Math.hypot(pt.x - stroke[i].x, pt.y - stroke[i].y) <= START_TOLERANCE) {
+          canGrab = true;
+          break;
+        }
+      }
+    }
 
-    if (distToResume <= START_TOLERANCE) {
+    if (canGrab) {
       isPointerDown = true;
       activePointerId = evt.pointerId;
       lastStepSoundIdx = activePointIndex;
@@ -773,8 +783,21 @@
 
     lastInteractionTime = performance.now();
     const pt = getNormCoords(evt);
+    const prev = currentFingerPt || pt;
     currentFingerPt = pt;
-    advanceStrokeProgress(pt);
+
+    // Interpolate along the finger movement segment so fast swipes smoothly
+    // advance through every intermediate stroke point without lagging!
+    const moveDist = Math.hypot(pt.x - prev.x, pt.y - prev.y);
+    const steps = Math.max(1, Math.ceil(moveDist / 1.8));
+    for (let s = 1; s <= steps; s++) {
+      if (!isPointerDown || isLetterCompleted) break;
+      const t = s / steps;
+      advanceStrokeProgress({
+        x: prev.x + (pt.x - prev.x) * t,
+        y: prev.y + (pt.y - prev.y) * t,
+      });
+    }
   }
 
   function handlePointerUp(evt) {
@@ -789,41 +812,33 @@
     const stroke = currentStrokes[activeStrokeIndex];
     if (!stroke) return;
 
-    // Small lookahead window (max 4 points = ~4.8 units) so the finger must
-    // faithfully follow every curve and corner in sequence without skipping.
-    const maxLookahead = Math.min(stroke.length - 1, activePointIndex + 4);
+    const maxLookahead = Math.min(stroke.length - 1, activePointIndex + 6);
     let bestIdx = activePointIndex;
-    let minDistInWindow = Infinity;
 
     for (let i = activePointIndex; i <= maxLookahead; i++) {
       const d = Math.hypot(pt.x - stroke[i].x, pt.y - stroke[i].y);
-      if (d < minDistInWindow) {
-        minDistInWindow = d;
-      }
       if (d <= TRACE_TOLERANCE) {
         bestIdx = i;
       }
     }
 
-    // Also check if finger is still near the immediately preceding point
-    if (activePointIndex > 0) {
-      const dPrev = Math.hypot(
-        pt.x - stroke[activePointIndex - 1].x,
-        pt.y - stroke[activePointIndex - 1].y
-      );
-      if (dPrev < minDistInWindow) {
-        minDistInWindow = dPrev;
-      }
+    // Check distance to local neighborhood on the stroke (around activePointIndex)
+    let minLocalDist = Infinity;
+    const checkStart = Math.max(0, activePointIndex - 6);
+    const checkEnd = Math.min(stroke.length - 1, activePointIndex + 10);
+    for (let i = checkStart; i <= checkEnd; i++) {
+      const d = Math.hypot(pt.x - stroke[i].x, pt.y - stroke[i].y);
+      if (d < minLocalDist) minLocalDist = d;
     }
 
-    // If the child's finger strays off the stroke path, stop tracing and require re-centering on the green dot!
-    if (minDistInWindow > OFF_TRACK_LIMIT) {
+    // If the child's finger strays far off the stroke path, stop tracing and prompt to resume from green dot
+    if (minLocalDist > OFF_TRACK_LIMIT) {
       isPointerDown = false;
       activePointerId = null;
       currentFingerPt = null;
       offTrackWarningUntil = performance.now() + 650;
       playGentleHintBoop();
-      statusMessage.innerHTML = `⚠️ 偏離線條囉！請從綠色圓點 <strong>${activeStrokeIndex + 1}</strong> 順著虛線慢慢畫`;
+      statusMessage.innerHTML = `⚠️ 偏離線條囉！請從綠色圓點 <strong>${activeStrokeIndex + 1}</strong> 順著虛線畫`;
       return;
     }
 
@@ -840,14 +855,14 @@
       }
     }
 
-    // Check if child accurately reached the end of the stroke
+    // Check if child reached the end of the stroke
     const endPt = stroke[stroke.length - 1];
     const distToEnd = Math.hypot(pt.x - endPt.x, pt.y - endPt.y);
     const completionRatio = activePointIndex / (stroke.length - 1);
 
     if (
       activePointIndex >= stroke.length - 2 ||
-      (completionRatio >= 0.95 && distToEnd <= TRACE_TOLERANCE * 0.85)
+      (completionRatio >= 0.92 && distToEnd <= TRACE_TOLERANCE)
     ) {
       completeCurrentStroke();
     }
