@@ -1037,8 +1037,7 @@
     const h = traceCanvas.height / dpr;
     const scaleX = w / 100;
     const scaleY = h / 100;
-    // Sleeker, well-proportioned stroke width for accurate handwriting
-    const strokeWidth = Math.max(15, Math.min(w, h) * 0.046);
+    const strokeWidth = Math.max(28, Math.min(w, h) * 0.088);
 
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1056,7 +1055,7 @@
         const c = strokePts[0];
         ctx.fillStyle = "#d1d5db";
         ctx.beginPath();
-        ctx.arc(c.x * scaleX, c.y * scaleY, strokeWidth * 0.62, 0, Math.PI * 2);
+        ctx.arc(c.x * scaleX, c.y * scaleY, strokeWidth * 0.56, 0, Math.PI * 2);
         ctx.fill();
       } else {
         ctx.strokeStyle = "#d1d5db";
@@ -1072,7 +1071,7 @@
         const c = strokePts[0];
         ctx.fillStyle = "#2563eb";
         ctx.beginPath();
-        ctx.arc(c.x * scaleX, c.y * scaleY, strokeWidth * 0.62, 0, Math.PI * 2);
+        ctx.arc(c.x * scaleX, c.y * scaleY, strokeWidth * 0.56, 0, Math.PI * 2);
         ctx.fill();
       } else {
         ctx.strokeStyle = "#2563eb";
@@ -1089,9 +1088,9 @@
       if (!dotMode) {
         // Dashed white guide line along the active stroke
         ctx.save();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([7, 7]);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+        ctx.lineWidth = 4;
+        ctx.setLineDash([10, 10]);
         drawPolyline(activeStroke, 0, activeStroke.length - 1, scaleX, scaleY);
         ctx.restore();
 
@@ -1099,9 +1098,9 @@
         const endPt = activeStroke[activeStroke.length - 1];
         ctx.save();
         ctx.strokeStyle = "#60a5fa";
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(endPt.x * scaleX, endPt.y * scaleY, strokeWidth * 0.44, 0, Math.PI * 2);
+        ctx.arc(endPt.x * scaleX, endPt.y * scaleY, strokeWidth * 0.36, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
 
@@ -1121,7 +1120,7 @@
       const currentTargetPt = activeStroke[activePointIndex] || activeStroke[0];
       const isWarning = now < offTrackWarningUntil;
       const pulse = 1 + (isWarning ? 0.22 * Math.sin(now * 0.025) : 0.12 * Math.sin(now * 0.006));
-      const startRadius = Math.max(15, strokeWidth * 0.58) * pulse;
+      const startRadius = strokeWidth * 0.48 * pulse;
 
       ctx.save();
       if (isWarning) {
@@ -1131,7 +1130,7 @@
         ctx.fillStyle = "#10b981";
         ctx.strokeStyle = "#ffffff";
       }
-      ctx.lineWidth = 3.5;
+      ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.arc(
         currentTargetPt.x * scaleX,
@@ -1145,7 +1144,7 @@
 
       // Stroke number label inside start circle
       ctx.fillStyle = "#ffffff";
-      ctx.font = `900 ${Math.round(Math.max(14, strokeWidth * 0.55))}px -apple-system, sans-serif`;
+      ctx.font = `900 ${Math.round(strokeWidth * 0.44)}px -apple-system, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(
@@ -1165,7 +1164,7 @@
         ctx.arc(
           currentFingerPt.x * scaleX,
           currentFingerPt.y * scaleY,
-          strokeWidth * 0.55,
+          strokeWidth * 0.42,
           0,
           Math.PI * 2
         );
@@ -1186,7 +1185,7 @@
         const guidePt = activeStroke[idx];
         if (guidePt) {
           ctx.save();
-          ctx.font = `${Math.round(Math.max(24, strokeWidth * 1.15))}px sans-serif`;
+          ctx.font = `${Math.round(strokeWidth * 0.85)}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.shadowColor = "rgba(0,0,0,0.2)";
