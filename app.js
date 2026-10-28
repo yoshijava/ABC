@@ -83,8 +83,94 @@
   function playStrokeDing(strokeIdx) {
     const baseNotes = [523.25, 587.33, 659.25, 783.99, 880.0];
     const f = baseNotes[strokeIdx % baseNotes.length];
-    playTone(f, 0.16, "triangle", 0, 0.22);
-    playTone(f * 1.25, 0.22, "sine", 0.07, 0.2);
+    playTone(f, 0.16, "triangle", 0, 0.25);
+    playTone(f * 1.25, 0.2, "sine", 0.06, 0.22);
+    playTone(f * 1.5, 0.26, "triangle", 0.12, 0.24);
+  }
+
+  // Cheerful bouncy "pop/boing" sound when the child puts their finger down on the start dot
+  function playPenDownSound() {
+    ensureAudioContext();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+
+    // Main bouncy bubble pop (pitch slides up quickly)
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(310, now);
+    osc.frequency.exponentialRampToValueAtTime(680, now + 0.09);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.28, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.13);
+
+    // Bright woodblock/xylophone overtone
+    playTone(880, 0.08, "triangle", 0.03, 0.16);
+  }
+
+  // Cute cartoon "boop" if touching away from the green start point
+  function playGentleHintBoop() {
+    ensureAudioContext();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(210, now + 0.11);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.13);
+  }
+
+  // Lively ascending musical bubble/xylophone notes while dragging along the stroke
+  const HAPPY_SCALE = [
+    523.25, // C5
+    587.33, // D5
+    659.25, // E5
+    783.99, // G5
+    880.0,  // A5
+    1046.5, // C6
+    1174.66,// D6
+    1318.51,// E6
+    1567.98,// G6
+    1760.0, // A6
+    2093.0, // C7
+  ];
+
+  function playTracingStepSound(progressRatio) {
+    ensureAudioContext();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const idx = Math.min(
+      HAPPY_SCALE.length - 1,
+      Math.max(0, Math.floor(progressRatio * HAPPY_SCALE.length))
+    );
+    const freq = HAPPY_SCALE[idx];
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "triangle";
+    // Slight upward pitch pop for a bubbly cartoon feel
+    osc.frequency.setValueAtTime(freq * 0.92, now);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.04, now + 0.065);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.09);
   }
 
   function playFireworkPop() {
@@ -242,6 +328,33 @@
         shape: "circle",
         rotation: 0,
         vRot: 0,
+      });
+    }
+  }
+
+  // Spawn lively sparkles right under the child's fingertip when touching/dragging
+  function spawnFingerSparkle(normPt, count = 6) {
+    const rect = traceCanvas.getBoundingClientRect();
+    const screenX = rect.left + (normPt.x / 100) * rect.width;
+    const screenY = rect.top + (normPt.y / 100) * rect.height;
+    const palette = ["#fde047", "#34d399", "#60a5fa", "#f472b6", "#fb923c"];
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.5 + Math.random() * 4;
+      particles.push({
+        x: screenX,
+        y: screenY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.2,
+        gravity: 0.1,
+        drag: 0.95,
+        size: 4 + Math.random() * 4.5,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        alpha: 1,
+        decay: 0.03 + Math.random() * 0.015,
+        shape: Math.random() > 0.4 ? "star" : "circle",
+        rotation: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 0.25,
       });
     }
   }
@@ -454,6 +567,7 @@
   // Kid-friendly tolerance in 0..100 coordinate space
   const START_TOLERANCE = 15.5;
   const TRACE_TOLERANCE = 15.5;
+  let lastStepSoundIdx = 0;
 
   function handlePointerDown(evt) {
     if (isLetterCompleted) return;
@@ -470,7 +584,11 @@
     if (isDotStroke(stroke)) {
       const center = stroke[0];
       if (Math.hypot(pt.x - center.x, pt.y - center.y) <= START_TOLERANCE * 1.2) {
+        playPenDownSound();
+        spawnFingerSparkle(pt, 10);
         completeCurrentStroke();
+      } else {
+        playGentleHintBoop();
       }
       return;
     }
@@ -493,10 +611,15 @@
     if (canGrab) {
       isPointerDown = true;
       activePointerId = evt.pointerId;
+      lastStepSoundIdx = activePointIndex;
+      playPenDownSound();
+      spawnFingerSparkle(resumePt, 8);
       try {
         traceCanvas.setPointerCapture(evt.pointerId);
       } catch (_) {}
       advanceStrokeProgress(pt);
+    } else {
+      playGentleHintBoop();
     }
   }
 
@@ -535,6 +658,15 @@
 
     if (bestIdx > activePointIndex) {
       activePointIndex = bestIdx;
+      const completionRatio = activePointIndex / Math.max(1, stroke.length - 1);
+
+      // Play ascending musical xylophone/bubble notes as the child traces forward
+      const stepStride = Math.max(3, Math.floor(stroke.length / 9));
+      if (activePointIndex - lastStepSoundIdx >= stepStride) {
+        lastStepSoundIdx = activePointIndex;
+        playTracingStepSound(completionRatio);
+        spawnFingerSparkle(stroke[activePointIndex], 4);
+      }
     }
 
     // Check if child reached the end of the stroke
