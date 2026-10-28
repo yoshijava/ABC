@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>ABC 快樂寫字母 - 幼兒筆畫練習</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Welcome / iPad Audio Unlock Overlay -->
+  <div id="welcome-overlay" class="overlay active">
+    <div class="modal-card welcome-card">
+      <div class="welcome-mascots">🌟 ✏️ 🔤</div>
+      <h1>ABC 快樂寫字母</h1>
+      <p class="subtitle">跟著虛線與小手寫一寫，把灰色變成藍色吧！</p>
+
+      <div class="mode-select-group" role="group" aria-label="選擇字母模式">
+        <button class="mode-choice active" data-mode="mixed">
+          <span class="mode-big">Aa</span>
+          <span class="mode-label">大小寫混合</span>
+        </button>
+        <button class="mode-choice" data-mode="upper">
+          <span class="mode-big">A-Z</span>
+          <span class="mode-label">大寫字母</span>
+        </button>
+        <button class="mode-choice" data-mode="lower">
+          <span class="mode-big">a-z</span>
+          <span class="mode-label">小寫字母</span>
+        </button>
+      </div>
+
+      <button id="start-game-btn" class="primary-btn pulse-btn">
+        🚀 開始挑戰（10 題一關）
+      </button>
+    </div>
+  </div>
+
+  <!-- Stage Clear (10/10) Celebration Overlay -->
+  <div id="stage-overlay" class="overlay">
+    <div class="modal-card stage-card">
+      <div class="trophy-bounce">🏆</div>
+      <h1>太棒了！過關成功！</h1>
+      <p class="subtitle">你完成了 10 個字母練習！真是寫字小高手！</p>
+      <div id="completed-letters-row" class="completed-letters-row"></div>
+      <button id="next-stage-btn" class="primary-btn pulse-btn">
+        🎉 再玩一關
+      </button>
+    </div>
+  </div>
+
+  <!-- Main App Layout -->
+  <div class="app-container">
+    <!-- Top Header Bar -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <button id="home-btn" class="icon-btn" title="回選單" aria-label="回選單">🏠</button>
+        <div class="mode-pills">
+          <button class="pill-btn active" data-mode="mixed">Aa 混合</button>
+          <button class="pill-btn" data-mode="upper">A-Z 大寫</button>
+          <button class="pill-btn" data-mode="lower">a-z 小寫</button>
+        </div>
+      </div>
+
+      <!-- 10-Star Progress Tracker -->
+      <div class="progress-wrapper" aria-label="闖關進度">
+        <div id="stars-bar" class="stars-bar"></div>
+        <span id="progress-text" class="progress-text">1 / 10</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions-group">
+        <button id="sound-btn" class="action-btn sound-btn" aria-label="聽發音">
+          🔊 <span>聽發音</span>
+        </button>
+        <button id="clear-btn" class="action-btn clear-btn" aria-label="重寫一次">
+          🔄 <span>重寫</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="workspace">
+      <!-- Left Info Card: Partner Case + Word & Emoji + Stroke Steps -->
+      <aside class="info-panel">
+        <div class="letter-badge-card">
+          <div class="case-label" id="case-label">大寫字母</div>
+          <div class="letter-pair">
+            <span id="current-letter-display" class="main-char">A</span>
+            <span id="partner-letter-display" class="partner-char">a</span>
+          </div>
+          <div class="word-hint" id="word-hint">
+            <span id="word-emoji" class="word-emoji">🍎</span>
+            <span id="word-text" class="word-text">Apple</span>
+          </div>
+        </div>
+
+        <div class="stroke-status-card">
+          <div class="stroke-title">筆畫進度</div>
+          <div id="stroke-dots" class="stroke-dots"></div>
+          <div id="status-message" class="status-message">
+            👆 從綠色圓點 <strong>1</strong> 開始跟著畫！
+          </div>
+        </div>
+
+        <!-- 3-Second Countdown Banner (Shown when letter completed) -->
+        <div id="countdown-banner" class="countdown-banner hidden">
+          <div class="countdown-title">✨ 好棒喔！ ✨</div>
+          <div class="countdown-sub">
+            <span id="countdown-sec">3</span> 秒後下一個字母...
+          </div>
+          <button id="skip-wait-btn" class="skip-wait-btn">馬上跳下一題 ➔</button>
+        </div>
+      </aside>
+
+      <!-- Center Tracing Canvas Board -->
+      <section class="board-section">
+        <div id="canvas-container" class="canvas-container">
+          <canvas id="trace-canvas"></canvas>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Fullscreen Fireworks & Confetti Canvas -->
+  <canvas id="fx-canvas" class="fx-canvas"></canvas>
+
+  <script src="letters.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
