@@ -26,6 +26,7 @@
   const startGameBtn = document.getElementById("start-game-btn");
   const nextStageBtn = document.getElementById("next-stage-btn");
   const homeBtn = document.getElementById("home-btn");
+  const bgmBtn = document.getElementById("bgm-btn");
   const soundBtn = document.getElementById("sound-btn");
   const clearBtn = document.getElementById("clear-btn");
   const skipWaitBtn = document.getElementById("skip-wait-btn");
@@ -323,6 +324,7 @@
 
   async function playVoiceMp3(url, fallbackText) {
     stopCurrentVoice();
+    duckBgm(2.0);
     try {
       ensureAudioContext();
       if (audioCtx) {
@@ -335,6 +337,9 @@
         source.connect(gain);
         gain.connect(audioCtx.destination);
         activeVoiceSource = source;
+        if (buffer && buffer.duration) {
+          duckBgm(Math.max(1.2, buffer.duration + 0.25));
+        }
         source.start(0);
         return;
       }
@@ -384,6 +389,167 @@
 
   function speakStageClear() {
     playVoiceMp3("audio/clear.mp3", "Yay! You did it! Great job!");
+  }
+
+  // =========================================================================
+  // Cheerful & Deliberately Quiet Web Audio Background Music (C Major Loop)
+  // =========================================================================
+  const BGM_NORMAL_GAIN = 0.042;
+  const BGM_DUCKED_GAIN = 0.012;
+  const BGM_STEP_SEC = 60 / 116 / 2; // Eighth note at 116 BPM
+
+  // 8-bar (64 eighth-note steps) playful xylophone-style melody (Hz, 0 = rest)
+  const BGM_MELODY = [
+    523.25, 0, 659.25, 0, 783.99, 659.25, 523.25, 0,
+    587.33, 0, 493.88, 0, 392.00, 493.88, 587.33, 0,
+    440.00, 0, 523.25, 0, 659.25, 523.25, 440.00, 0,
+    349.23, 0, 440.00, 523.25, 392.00, 0, 493.88, 0,
+    659.25, 0, 783.99, 659.25, 523.25, 587.33, 659.25, 0,
+    698.46, 0, 659.25, 587.33, 523.25, 440.00, 523.25, 0,
+    587.33, 659.25, 587.33, 493.88, 392.00, 440.00, 493.88, 0,
+    523.25, 0, 659.25, 0, 523.25, 0, 0, 0,
+  ];
+
+  // 8-bar (64 eighth-note steps) gentle warm accompaniment bass/pluck
+  const BGM_BASS = [
+    261.63, 0, 329.63, 0, 392.00, 0, 329.63, 0,
+    196.00, 0, 293.66, 0, 246.94, 0, 293.66, 0,
+    220.00, 0, 261.63, 0, 329.63, 0, 261.63, 0,
+    174.61, 0, 261.63, 0, 196.00, 0, 246.94, 0,
+    261.63, 0, 329.63, 0, 392.00, 0, 329.63, 0,
+    174.61, 0, 261.63, 0, 349.23, 0, 261.63, 0,
+    196.00, 0, 246.94, 0, 293.66, 0, 246.94, 0,
+    261.63, 0, 392.00, 0, 261.63, 0, 0, 0,
+  ];
+
+  let isBgmEnabled = true;
+  let isBgmPlaying = false;
+  let bgmGainNode = null;
+  let bgmFilterNode = null;
+  let bgmSchedulerTimer = null;
+  let bgmDuckTimer = null;
+  let bgmNextNoteTime = 0;
+  let bgmStepIndex = 0;
+
+  function ensureBgmBus() {
+    ensureAudioContext();
+    if (!audioCtx) return null;
+    if (!bgmGainNode) {
+      bgmFilterNode = audioCtx.createBiquadFilter();
+      bgmFilterNode.type = "lowpass";
+      bgmFilterNode.frequency.value = 1550;
+
+      bgmGainNode = audioCtx.createGain();
+      bgmGainNode.gain.value = BGM_NORMAL_GAIN;
+
+      bgmFilterNode.connect(bgmGainNode);
+      bgmGainNode.connect(audioCtx.destination);
+    }
+    return bgmFilterNode;
+  }
+
+  function scheduleBgmNote(freq, time, duration, volumeScale, waveType) {
+    if (!freq || !audioCtx || !bgmFilterNode) return;
+    const osc = audioCtx.createOscillator();
+    const noteGain = audioCtx.createGain();
+
+    osc.type = waveType;
+    osc.frequency.setValueAtTime(freq, time);
+
+    noteGain.gain.setValueAtTime(0.0001, time);
+    noteGain.gain.linearRampToValueAtTime(volumeScale, time + 0.018);
+    noteGain.gain.exponentialRampToValueAtTime(0.0005, time + duration);
+
+    osc.connect(noteGain);
+    noteGain.connect(bgmFilterNode);
+
+    osc.start(time);
+    osc.stop(time + duration + 0.02);
+  }
+
+  function scheduleBgmTick() {
+    if (!isBgmPlaying || !isBgmEnabled || !audioCtx) return;
+    if (bgmNextNoteTime < audioCtx.currentTime - 0.05) {
+      bgmNextNoteTime = audioCtx.currentTime + 0.05;
+    }
+    while (bgmNextNoteTime < audioCtx.currentTime + 0.14) {
+      const idx = bgmStepIndex % BGM_MELODY.length;
+      const melFreq = BGM_MELODY[idx];
+      const bassFreq = BGM_BASS[idx];
+
+      if (melFreq > 0) {
+        scheduleBgmNote(melFreq, bgmNextNoteTime, BGM_STEP_SEC * 0.85, 0.72, "triangle");
+      }
+      if (bassFreq > 0) {
+        scheduleBgmNote(bassFreq, bgmNextNoteTime, BGM_STEP_SEC * 1.35, 0.45, "sine");
+      }
+
+      bgmNextNoteTime += BGM_STEP_SEC;
+      bgmStepIndex = (bgmStepIndex + 1) % BGM_MELODY.length;
+    }
+  }
+
+  function updateBgmButtonUI() {
+    if (!bgmBtn) return;
+    bgmBtn.classList.toggle("active", isBgmEnabled);
+    bgmBtn.textContent = isBgmEnabled ? "🎵" : "🔇";
+    bgmBtn.setAttribute("aria-pressed", String(isBgmEnabled));
+  }
+
+  function startBgm() {
+    if (!isBgmEnabled || isBgmPlaying) return;
+    ensureBgmBus();
+    if (!audioCtx || !bgmGainNode) return;
+
+    const now = audioCtx.currentTime;
+    bgmGainNode.gain.cancelScheduledValues(now);
+    bgmGainNode.gain.setValueAtTime(bgmGainNode.gain.value || 0.001, now);
+    bgmGainNode.gain.linearRampToValueAtTime(BGM_NORMAL_GAIN, now + 0.35);
+
+    isBgmPlaying = true;
+    bgmStepIndex = 0;
+    bgmNextNoteTime = now + 0.08;
+    bgmSchedulerTimer = setInterval(scheduleBgmTick, 45);
+    scheduleBgmTick();
+    updateBgmButtonUI();
+  }
+
+  function stopBgm() {
+    isBgmPlaying = false;
+    if (bgmSchedulerTimer) {
+      clearInterval(bgmSchedulerTimer);
+      bgmSchedulerTimer = null;
+    }
+    if (bgmDuckTimer) {
+      clearTimeout(bgmDuckTimer);
+      bgmDuckTimer = null;
+    }
+    if (audioCtx && bgmGainNode) {
+      const now = audioCtx.currentTime;
+      bgmGainNode.gain.cancelScheduledValues(now);
+      bgmGainNode.gain.setValueAtTime(bgmGainNode.gain.value, now);
+      bgmGainNode.gain.linearRampToValueAtTime(0.0001, now + 0.15);
+    }
+  }
+
+  function duckBgm(durationSec = 1.8) {
+    if (!isBgmPlaying || !isBgmEnabled || !audioCtx || !bgmGainNode) return;
+    const now = audioCtx.currentTime;
+    bgmGainNode.gain.cancelScheduledValues(now);
+    bgmGainNode.gain.setValueAtTime(bgmGainNode.gain.value, now);
+    bgmGainNode.gain.linearRampToValueAtTime(BGM_DUCKED_GAIN, now + 0.1);
+
+    if (bgmDuckTimer) {
+      clearTimeout(bgmDuckTimer);
+    }
+    bgmDuckTimer = setTimeout(() => {
+      bgmDuckTimer = null;
+      if (!isBgmPlaying || !isBgmEnabled || !audioCtx || !bgmGainNode) return;
+      const t = audioCtx.currentTime;
+      bgmGainNode.gain.cancelScheduledValues(t);
+      bgmGainNode.gain.setValueAtTime(bgmGainNode.gain.value, t);
+      bgmGainNode.gain.linearRampToValueAtTime(BGM_NORMAL_GAIN, t + 0.45);
+    }, Math.max(400, durationSec * 1000));
   }
 
   // ================= FIREWORKS & CONFETTI ENGINE =================
@@ -604,6 +770,7 @@
     currentStageIndex = 0;
     renderStarsBar();
     loadLetter(stageLetters[0]);
+    startBgm();
   }
 
   function renderStarsBar() {
@@ -920,6 +1087,7 @@
     renderStarsBar();
 
     // Launch celebratory fireworks!
+    duckBgm(2.2);
     playLetterSuccessFanfare();
     spawnFireworkBurst(0.35, 0.38, 45);
     setTimeout(() => {
@@ -966,6 +1134,7 @@
   }
 
   function triggerStageClearCelebration() {
+    stopBgm();
     countdownBanner.classList.add("hidden");
     hideWordPopup();
     completedLettersRow.innerHTML = "";
@@ -1286,6 +1455,7 @@
 
   homeBtn.addEventListener("click", () => {
     clearTimers();
+    stopBgm();
     welcomeOverlay.classList.add("active");
   });
 
@@ -1324,6 +1494,36 @@
     proceedToNextLetter();
   });
 
+  if (bgmBtn) {
+    bgmBtn.addEventListener("click", () => {
+      ensureAudioContext();
+      isBgmEnabled = !isBgmEnabled;
+      updateBgmButtonUI();
+      if (isBgmEnabled) {
+        if (
+          !welcomeOverlay.classList.contains("active") &&
+          !stageOverlay.classList.contains("active")
+        ) {
+          startBgm();
+        }
+      } else {
+        stopBgm();
+      }
+    });
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopBgm();
+    } else if (
+      isBgmEnabled &&
+      !welcomeOverlay.classList.contains("active") &&
+      !stageOverlay.classList.contains("active")
+    ) {
+      startBgm();
+    }
+  });
+
   // Initialize layout and start animation loop
   resizeCanvases();
   stageLetters = generateStageLetters();
@@ -1331,5 +1531,6 @@
   currentStrokes = window.LETTER_STROKES[currentLetter];
   renderStarsBar();
   updateStrokeStatusUI();
+  updateBgmButtonUI();
   requestAnimationFrame(mainLoop);
 })();
